@@ -1,11 +1,12 @@
 import multiprocessing
-from io_snp import read_snp_by_chr
-chrom_list = [13,14,15,16,17,18,19]
+from read_snp import read_snp_by_chr
+from parameters import chrom_list
 if __name__ == "__main__":
     pool = multiprocessing.Pool(processes=4)
     result = []
     for i in chrom_list:
         msg = 'chr'+str(i)
+        print msg
         result.append(pool.apply_async(read_snp_by_chr, (msg, )))
     pool.close()
     pool.join()

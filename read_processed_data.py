@@ -1,4 +1,5 @@
-
+from copy import deepcopy
+snp_list_dir = "E:\\snp_list\\"
 def read_previous_eqtl(file_name):
     '''
     return dictionary:
@@ -8,21 +9,56 @@ def read_previous_eqtl(file_name):
     result_dict={}
     for line in open(file_name, 'r'):
         items = line.strip().split('\t')
-        result_dict[items[2]] = int(items[6])#assume cis-qtl
+        result_dict[items[2]] = float(items[6])#assume cis-qtl
+        result_dict[float(items[6])] = items[2]
     return result_dict
 def read_gene_mapping(file_name):
-    res_dict={}
+    '''
+    id_to_gene:
+        key: auto-increment id:0,1,2,3...
+        value: gene name
+    '''
+    id_to_gene={}
+    gene_to_id={}
+    chr_to_gene={}
     for line in open(file_name,'r'):
         items = line.strip().split('\t')
-        res_dict[int(items[0])] = (items[1],items[3])
-    return res_dict    
-def read_undirected_n(file_name,gene_mapping):
+        id_to_gene[int(items[0])] = items[1]
+        gene_to_id[items[1]] = int(items[0])
+        chr_to_gene.setdefault(items[3],[]).append(items[1])
+    return id_to_gene, gene_to_id, chr_to_gene    
+def read_gene_sample_id(file_name):
+    res_list = []
+    for line in open(file_name):
+        res_list.append(line.strip())
+    return res_list
+def read_undirected_n(file_name,id_to_gene):
     res_dict={}
     for line in open(file_name,'r'):
         n1,n2 = [int(i) for i in line.strip().split('\t')[:2]]
-        res_dict.setdefault(gene_mapping[n1][0],[]).append(gene_mapping[n2][0])
-        res_dict.setdefault(gene_mapping[n2][0],[]).append(gene_mapping[n1][0])
+        res_dict.setdefault(id_to_gene[n1],[]).append(id_to_gene[n2])
+        res_dict.setdefault(id_to_gene[n2],[]).append(id_to_gene[n1])
     return res_dict
+def read_expression_value(file_name):
+    res_list = []
+    for line in open(file_name,'r'):
+        res_list.append([float(i) for i in line.strip().split()])
+    return res_list
+def read_processed_snp(file_name):
+    '''
+    sample_id_list:ordered sample ids
+    res_dict:
+        key:position of variant 
+            NOTE: positions like '89059044.5' exists, so use float() instead of int()
+        value:a list of genotype, 0 for 0/0 1 for 1/0 2 for 1/1
+    '''
+    f = open(file_name,'r')
+    sample_id_list = f.readline().strip().split('\t')
+    res_dict={}
+    for line in f:
+        items = line.strip().split('\t')
+        res_dict[float(items[0])] = [int(i) for i in items[1].split(',')]
+    return sample_id, res_dict
 if __name__ == '__main__':
     file_name = "G:\\res_files\\EUR373.gene.cis.FDR5.best.rs137.txt"
     res = read_previous_eqtl(file_name)

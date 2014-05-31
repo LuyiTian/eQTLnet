@@ -8,4 +8,88 @@
 #
 #
 #####################################################
-
+from read_processed_data import read_previous_eqtl, read_gene_mapping, read_undirected_n, read_expression_value, read_processed_snp,read_gene_sample_id
+from scipy.stats import norm, linregress
+from parameters import processed_data_dir,chrom_list,snp_list_dir
+from math import sqrt,log
+#norm.cdf(1.96)
+#slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
+def remap_expression(snp_sample_ids,gene_sample_ids,expression_matrix):
+    '''
+    expression list and snp list may have different sample orders
+    force expression list to have the same order with snp list
+    before: expression: s1, s3, s2. snp: s1, s2, s3
+    after: expression: s1, s2, s3
+    '''
+    new_matrix=[[] for i in range(len(expression_matrix))]
+    exclude_samples = []
+    for the_id in snp_sample_ids:
+        if the_id in gene_sample_ids:
+            _i = gene_sample_ids.index(the_id)
+            for ind,g in enumerate(expression_matrix):
+                new_matrix[ind].append(g[_i])
+        if the_id not in gene_sample_ids:
+            #print "WARNING: snp sample",the_id," is not in gene_sample_ids"
+            exclude_samples.append(snp_sample_ids.index(the_id))
+    return new_matrix, exclude_samples
+def cal_partial_correlation_r(node_M, node_A, node_B, lens):
+    _, _, r_MA, _, _ = linregress(node_M,node_A)
+    _, _, r_MB, _, _ = linregress(node_M,node_B)
+    _, _, r_BA, _, _ = linregress(node_A,node_B)
+    partial_r = (r_MB - r_MA*r_BA)/sqrt((1-r_MA**2)*(1-r_BA**2))
+    Z_score = abs(0.5*sqrt(lens-3)*log((partial_r+1)/(1-partial_r)))#Fisher's Z transform
+    p_value = 2*norm.cdf(-Z_score)
+    return partial_r, p_value
+    
+if __name__ == "__main__":
+    #########
+    eqtl_name = processed_data_dir+"EUR373.gene.cis.FDR5.best.rs137.txt"
+    gene_expression_name = processed_data_dir+"gene_expression.txt"
+    gene_name = processed_data_dir+"gene.txt"
+    gene_sample_name = processed_data_dir+"sample_id.txt"
+    undi_network_name = processed_data_dir+"out_coexpression"
+    #########
+    eqtl_gene_snp = read_previous_eqtl(eqtl_name)
+    id_to_gene, gene_to_id, chr_to_gene = read_gene_mapping(gene_name)
+    gene_sample_ids = read_gene_sample_id(gene_sample_name)
+    network_dict = read_undirected_n(undi_network_name,id_to_gene)
+    expression_matrix = read_expression_value(gene_expression_name)
+    old_sample_id = []
+    new_matrix = []
+    result_file = open(processed_data_dir+"direct_network",'w')
+    print "start"
+    for chrom in chrom_list:
+        genes_in_chr = chr_to_gene[str(chrom)]
+        print "start chr:",chrom
+        snp_f = open(snp_list_dir+"res_chr"+str(chrom),'r')#read all SNP in this chromosome
+        sample_id = snp_f.readline().strip().split('\t')
+        if old_sample_id == sample_id:
+            pass
+        else:
+            #if sample orders are different from previous one, change orders
+            old_sample_id = sample_id
+            new_matrix, exclude_samples = remap_expression(sample_id,gene_sample_ids,expression_matrix)
+        snp_in_chr = [eqtl_gene_snp[gene] for gene in genes_in_chr]
+        print len(genes_in_chr),'genes in chromosome.',len(snp_in_chr),'snps in chromosome'
+        for line in snp_f:
+            items = line.strip().split('\t')
+            snp = float(items[0]) 
+            genotypes = [int(locus) for i, locus in enumerate(items[1].split(',')) if i not in exclude_samples]
+            if snp in snp_in_chr:
+                the_gene = eqtl_gene_snp[snp]
+                if not network_dict.has_key(the_gene):
+                    print 'no gene is associated to',the_gene
+                    continue
+                for associated_gene in network_dict[the_gene]:
+                    M = []
+                    A = []
+                    B = []
+                    for i in range(len(genotypes)):
+                        if genotypes[i]>-999 and new_matrix[gene_to_id[the_gene]]>-999 and new_matrix[gene_to_id[associated_gene]]>-999:
+                            M.append(genotypes[i])
+                            A.append(new_matrix[gene_to_id[the_gene]][i])
+                            B.append(new_matrix[gene_to_id[associated_gene]][i])
+                    r, p_value = cal_partial_correlation_r(M, A, B,len(M))
+                    result_file.write(str(chrom)+'\t'+str(snp)+'\t'+the_gene+'\t'+associated_gene+'\t'+str(r)+'\t'+str(p_value)+'\n')
+        snp_f.close()
+    result_file.close()
