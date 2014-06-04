@@ -32,10 +32,11 @@ def read_gene_sample_id(file_name):
     for line in open(file_name):
         res_list.append(line.strip())
     return res_list
-def read_undirected_n(file_name,id_to_gene):
+def read_undirected_n(file_name,id_to_gene, min_r = 0.0):
     res_dict={}
     for line in open(file_name,'r'):
         n1,n2 = [int(i) for i in line.strip().split('\t')[:2]]
+        if -min_r <= float(line.strip().split('\t')[2]) <= min_r:continue
         res_dict.setdefault(id_to_gene[n1],[]).append(id_to_gene[n2])
         res_dict.setdefault(id_to_gene[n2],[]).append(id_to_gene[n1])
     return res_dict

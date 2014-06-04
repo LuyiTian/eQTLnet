@@ -33,13 +33,13 @@ def remap_expression(snp_sample_ids,gene_sample_ids,expression_matrix):
             exclude_samples.append(snp_sample_ids.index(the_id))
     return new_matrix, exclude_samples
 def cal_partial_correlation_r(node_M, node_A, node_B, lens):
-    _, _, r_MA, _, _ = linregress(node_M,node_A)
-    _, _, r_MB, _, _ = linregress(node_M,node_B)
-    _, _, r_BA, _, _ = linregress(node_A,node_B)
+    _, _, r_MA, p_MA, _ = linregress(node_M,node_A)
+    _, _, r_MB, p_MB, _ = linregress(node_M,node_B)
+    _, _, r_BA, p_BA, _ = linregress(node_A,node_B)
     partial_r = (r_MB - r_MA*r_BA)/sqrt((1-r_MA**2)*(1-r_BA**2))
     Z_score = abs(0.5*sqrt(lens-3)*log((partial_r+1)/(1-partial_r)))#Fisher's Z transform
     p_value = 2*norm.cdf(-Z_score)
-    return partial_r, p_value
+    return partial_r, p_value,p_MA, p_MB, p_BA
     
 if __name__ == "__main__":
     #########
@@ -69,7 +69,7 @@ if __name__ == "__main__":
             #if sample orders are different from previous one, change orders
             old_sample_id = sample_id
             new_matrix, exclude_samples = remap_expression(sample_id,gene_sample_ids,expression_matrix)
-        snp_in_chr = [eqtl_gene_snp[gene] for gene in genes_in_chr]
+        snp_in_chr = [eqtl_gene_snp[gene] for gene in genes_in_chr if eqtl_gene_snp.has_key(gene)]
         print len(genes_in_chr),'genes in chromosome.',len(snp_in_chr),'snps in chromosome'
         for line in snp_f:
             items = line.strip().split('\t')
@@ -78,7 +78,7 @@ if __name__ == "__main__":
             if snp in snp_in_chr:
                 the_gene = eqtl_gene_snp[snp]
                 if not network_dict.has_key(the_gene):
-                    print 'no gene is associated to',the_gene
+                    #print 'no gene is associated to',the_gene
                     continue
                 for associated_gene in network_dict[the_gene]:
                     M = []
@@ -89,7 +89,8 @@ if __name__ == "__main__":
                             M.append(genotypes[i])
                             A.append(new_matrix[gene_to_id[the_gene]][i])
                             B.append(new_matrix[gene_to_id[associated_gene]][i])
-                    r, p_value = cal_partial_correlation_r(M, A, B,len(M))
-                    result_file.write(str(chrom)+'\t'+str(snp)+'\t'+the_gene+'\t'+associated_gene+'\t'+str(r)+'\t'+str(p_value)+'\n')
+                    r, p_value, p_MA, p_MB, p_BA = cal_partial_correlation_r(M, A, B,len(M))
+                    result_file.write(str(chrom)+'\t'+str(snp)+'\t'+the_gene+'\t'+associated_gene+\
+                    '\t'+str(r)+'\t'+str(p_MA)+'\t'+str(p_MB)+'\t'+str(p_BA)+'\t'+str(p_value)+'\n')
         snp_f.close()
     result_file.close()
