@@ -60,6 +60,24 @@ def read_processed_snp(file_name):
         items = line.strip().split('\t')
         res_dict[float(items[0])] = [int(i) for i in items[1].split(',')]
     return sample_id, res_dict
+def remap_expression(snp_sample_ids,gene_sample_ids,expression_matrix):
+    '''
+    expression list and snp list may have different sample orders
+    force expression list to have the same order with snp list
+    before: expression: s1, s3, s2. snp: s1, s2, s3
+    after: expression: s1, s2, s3
+    '''
+    new_matrix=[[] for i in range(len(expression_matrix))]
+    exclude_samples = []
+    for the_id in snp_sample_ids:
+        if the_id in gene_sample_ids:
+            _i = gene_sample_ids.index(the_id)
+            for ind,g in enumerate(expression_matrix):
+                new_matrix[ind].append(g[_i])
+        if the_id not in gene_sample_ids:
+            print "WARNING: snp sample",the_id," is not in gene_sample_ids"
+            exclude_samples.append(snp_sample_ids.index(the_id))
+    return new_matrix, exclude_samples
 if __name__ == '__main__':
     file_name = "G:\\res_files\\EUR373.gene.cis.FDR5.best.rs137.txt"
     res = read_previous_eqtl(file_name)

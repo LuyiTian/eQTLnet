@@ -8,30 +8,13 @@
 #
 #
 #####################################################
-from read_processed_data import read_previous_eqtl, read_gene_mapping, read_undirected_n, read_expression_value, read_processed_snp,read_gene_sample_id
+from read_processed_data import *
 from scipy.stats import norm, linregress
 from parameters import processed_data_dir,chrom_list,snp_list_dir
 from math import sqrt,log
 #norm.cdf(1.96)
 #slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
-def remap_expression(snp_sample_ids,gene_sample_ids,expression_matrix):
-    '''
-    expression list and snp list may have different sample orders
-    force expression list to have the same order with snp list
-    before: expression: s1, s3, s2. snp: s1, s2, s3
-    after: expression: s1, s2, s3
-    '''
-    new_matrix=[[] for i in range(len(expression_matrix))]
-    exclude_samples = []
-    for the_id in snp_sample_ids:
-        if the_id in gene_sample_ids:
-            _i = gene_sample_ids.index(the_id)
-            for ind,g in enumerate(expression_matrix):
-                new_matrix[ind].append(g[_i])
-        if the_id not in gene_sample_ids:
-            #print "WARNING: snp sample",the_id," is not in gene_sample_ids"
-            exclude_samples.append(snp_sample_ids.index(the_id))
-    return new_matrix, exclude_samples
+
 def cal_partial_correlation_r(node_M, node_A, node_B, lens):
     _, _, r_MA, p_MA, _ = linregress(node_M,node_A)
     _, _, r_MB, p_MB, _ = linregress(node_M,node_B)
