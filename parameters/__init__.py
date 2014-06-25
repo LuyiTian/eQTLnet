@@ -1,0 +1,1 @@
+from parameters import chrom_list, processed_data_dir, snp_list_dir, TF_peak_dir, data_dir
