@@ -23,9 +23,9 @@ def read_gene_mapping(file_name):
     chr_to_gene={}
     for line in open(file_name,'r'):
         items = line.strip().split('\t')
-        id_to_gene[int(items[0])] = items[1]
-        gene_to_id[items[1]] = int(items[0])
-        chr_to_gene.setdefault(items[3],[]).append(items[1])
+        id_to_gene[int(items[0])] = items[1].split('.')[0]
+        gene_to_id[items[1].split('.')[0]] = int(items[0])
+        chr_to_gene.setdefault(items[3],[]).append(items[1].split('.')[0])
     return id_to_gene, gene_to_id, chr_to_gene    
 def read_gene_sample_id(file_name):
     res_list = []
@@ -78,6 +78,14 @@ def remap_expression(snp_sample_ids,gene_sample_ids,expression_matrix):
             print "WARNING: snp sample",the_id," is not in gene_sample_ids"
             exclude_samples.append(snp_sample_ids.index(the_id))
     return new_matrix, exclude_samples
+def get_gene_TSS_seg(f_name,chr,distance = 3000):
+    res = []
+    for line in open(f_name,'r'):
+        items = line.strip().split('\t')
+        if items[3] == str(chr):
+             res.append((int(items[4])-distance,int(items[4])+distance,int(items[0])))
+    res = sorted(res,key = lambda x:x[0])
+    return res
 if __name__ == '__main__':
     file_name = "G:\\res_files\\EUR373.gene.cis.FDR5.best.rs137.txt"
     res = read_previous_eqtl(file_name)

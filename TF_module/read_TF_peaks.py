@@ -1,7 +1,7 @@
-import sys
+##import sys
 import os
 import re
-sys.path.append("..")
+##sys.path.append("..")
 from parameters import TF_peak_dir,data_dir
 cell_type = "Gm12878"
 file_list = os.listdir(TF_peak_dir)
