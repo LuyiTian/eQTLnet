@@ -11,7 +11,7 @@ def cal_overlap(the_list,ref_list):
     '''
     if type(the_list) != list:
         return _iter_point_overlap(the_list,ref_list)
-    elif len(the_list[0]) == 3:
+    elif len(the_list[0]) >= 3:
         return _seg_overlap(the_list,ref_list)
     elif len(the_list[0]) == 2:
         return _point_overlap(the_list,ref_list)
