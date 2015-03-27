@@ -33,9 +33,9 @@ def add_chr_snp(database_path, file_path, sample_list):
     con.close()
 
 if __name__== "__main__":
-    snp_path = '/Users/luyi/eQTL/snp_processed/'
-    sample_file = '/Users/luyi/eQTL/Data/Norm_raw_sample_id.txt'
-    database_path = '/Users/luyi/eQTL/Database/SNPdatabase.db'
+    snp_path = '/Users/luyi/data/snp_processed/'
+    sample_file = '/Users/luyi/data/Norm_raw_sample_id.txt'
+    database_path = '/Users/luyi/data/Database/SNPdatabase.db'
     sample_list = []
     for line in open(sample_file,'r'):
         sample_list.append(line.strip())
