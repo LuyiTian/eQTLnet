@@ -35,7 +35,7 @@ def add_chr_snp(database_path, file_path, sample_list):
 
 def add_chr_snp(database_path, file_path, chrm):
     '''
-    add sno info by chr in databases
+    add snp info by chr in databases
     input:
         database_path:
             can be opened by sqlite3.connect(database_path)

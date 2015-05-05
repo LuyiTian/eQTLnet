@@ -26,6 +26,9 @@ class Db_SNP():
         '''
         all_res = []
         #out_f = open(out_file,'w')
+        site_dist_dict = {}
+        for key in motif_dict:
+            site_dist_dict[key] = [0]*motif_dict[key].shape[0]
         for line in open(match_file):
             motif_id, chrm, sta,end, strand = line.strip().split()
             if chrm != 'chr1':
@@ -40,13 +43,11 @@ class Db_SNP():
                         continue
                     score = motif_dict[motif_id][int(snp[0])-sta,\
                     NT_ORDER[strand][snp[1]]]-motif_dict[motif_id][int(snp[0])-sta,NT_ORDER[strand][snp[2]]]
-                    if score == 1.:
-                        print score,snp,motif_id,sta,end,strand
-                        print motif_dict[motif_id]
-                        raise EOFError
-                    all_res.append(score)
-        return all_res
-
+                    if score >= -1.9:
+                        site_dist_dict[motif_id][int(snp[0])-sta]+=1
+                        #print score,snp,motif_id,sta,end,strand
+                        #all_res.append(motif_id.split('_')[0])
+        return site_dist_dict
 
 
 if __name__ == "__main__":
@@ -54,14 +55,30 @@ if __name__ == "__main__":
     #id_to_gene, gene_to_id, _ = read_gene_mapping(gene_file_path)
     #for chrm in range(1,23):
     #    TSS_in_chr = get_gene_TSS_seg(gene_file_path,chrm)
-    test_data = [(100000,500000),(1000000,1100000),(5000000,6000000),(6000000,7000000)]
-    database_path = '/Users/luyi/data/Database/SNPdatabase.db'
-    the_SNP = Db_SNP(database_path)
-    print the_SNP.get_pos_by_seg(test_data[0],'chr1')
     ##############
+    import numpy as np
     motif_dict = {}
     f_path = '/Users/luyi/data/motif/motifs.txt'
     dist = []
-    for name,PWM in read_motif_PWM(f_path):
+    for name, PWM in read_motif_PWM(f_path):
         motif_dict[name] = PWM
-    ssss = the_SNP.find_motif_snp(motif_dict,'/Users/luyi/data/motif/matches.txt','aaa')
+    the_SNP = Db_SNP('/Users/luyi/data/Database/SNPdatabase.db')
+    ssss = the_SNP.find_motif_snp(motif_dict,'/Users/luyi/data/motif/matches.txt', 'aaa')
+    site_dist_tuple = [(key,max(ssss[key])) for key in ssss]
+    site_dist_tuple.sort(key=lambda x: x[1], reverse=True)
+    for it in site_dist_tuple[:20]:
+        print it[0]
+        tmp = np.array(ssss[it[0]])
+        tmp = np.atleast_2d(tmp).T
+        print np.hstack((tmp,motif_dict[it[0]]))
+        print '###############'
+    print '~'*20
+    for it in site_dist_tuple[-10+len(site_dist_tuple)/2:10+len(site_dist_tuple)/2]:
+        print it[0]
+        tmp = np.array(ssss[it[0]])
+        tmp = np.atleast_2d(tmp).T
+        print np.hstack((tmp,motif_dict[it[0]]))
+        print '###############'
+    #aaaa = [(the_id,ssss.count(the_id)) for the_id in list(set(ssss))]
+    #aaaa.sort(key=lambda x: x[1])
+    #print aaaa[-20:]

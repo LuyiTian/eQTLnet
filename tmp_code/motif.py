@@ -38,5 +38,5 @@ if __name__ == '__main__':
     for a,b in read_motif_PWM(f_path):
         print a
         print b
-        print b[1,3]
+        print b[1, 3]
         break
