@@ -57,15 +57,26 @@ if __name__ == "__main__":
     #    TSS_in_chr = get_gene_TSS_seg(gene_file_path,chrm)
     ##############
     import numpy as np
+    import matplotlib.pyplot as plt
     motif_dict = {}
     f_path = '/Users/luyi/data/motif/motifs.txt'
     dist = []
     for name, PWM in read_motif_PWM(f_path):
         motif_dict[name] = PWM
     the_SNP = Db_SNP('/Users/luyi/data/Database/SNPdatabase.db')
-    ssss = the_SNP.find_motif_snp(motif_dict,'/Users/luyi/data/motif/matches.txt', 'aaa')
+    ssss = the_SNP.find_motif_snp(motif_dict, '/Users/luyi/data/motif/matches.txt', 'aaa')
     site_dist_tuple = [(key,max(ssss[key])) for key in ssss]
     site_dist_tuple.sort(key=lambda x: x[1], reverse=True)
+    X = []
+    Y = []
+    for key in ssss:
+        if sum(ssss[key]) == 0.: continue
+        tmp = [float(it)/sum(ssss[key]) for it in ssss[key]]
+        X.extend(tmp)
+        Y.extend([np.max(it) for it in motif_dict[key]])
+    plt.plot(X,Y,'x')
+    plt.show()
+    '''
     for it in site_dist_tuple[:20]:
         print it[0]
         tmp = np.array(ssss[it[0]])
@@ -79,6 +90,7 @@ if __name__ == "__main__":
         tmp = np.atleast_2d(tmp).T
         print np.hstack((tmp,motif_dict[it[0]]))
         print '###############'
+    '''
     #aaaa = [(the_id,ssss.count(the_id)) for the_id in list(set(ssss))]
     #aaaa.sort(key=lambda x: x[1])
     #print aaaa[-20:]
